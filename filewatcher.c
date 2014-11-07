@@ -153,34 +153,43 @@ void *watchers(){
 
         if (filter || event->mask & IN_MOVED_FROM) {
           print(WHITE, "[");
-          if (event->mask & IN_ISDIR) {
-            print(BLUE, "Directory");
-          } else {
-            print(BLUE, "File");
-          }
-          print(WHITE, "] ");
-          print(PURPLE, "\"%s\" ", event->name);
         }
 
 				if (event->mask & IN_CREATE) {
-          print(GREEN, "created", event->name);
+          print(GREEN, "CREATED", event->name);
 				} else if (event->mask & IN_MODIFY) {
-          print(INFO, "modified");
+          print(INFO, "MODIFIED");
 				} else if (event->mask & IN_DELETE) {
-          print(RED, "deleted", event->name);
+          print(RED, "DELETED", event->name);
 				} else if (event->mask & IN_DELETE_SELF) {
 					printf("Base directory \"%s\" was deleted.\n", event->name);
 				} else if (event->mask & IN_MOVED_FROM) {
-          print(INFO, "renamed");
+          print(INFO, "RENAMED");
           print(OTHER, " to ");
         } else if (event->mask & IN_MOVED_TO) {
           print(OTHER, "\"%s\"", event->name);
-        } else {
-          //printf("Unknown: %s", event->name);
+        }
+
+        if (filter || event->mask & IN_MOVED_FROM) {
+          print(WHITE, "]");
+        }
+
+        if (filter || event->mask & IN_MOVED_FROM) {
+          print(WHITE, "[");
+          if (event->mask & IN_ISDIR) {
+            print(BLUE, "Directory");
+          } else {
+            print(PURPLE, "File");
+          }
+          print(WHITE, "]");
+        }
+
+        if (filter || event->mask & IN_MOVED_FROM) {
+          print(WHITE, " %s", event->name);
         }
 
         if (filter || event->mask & IN_MOVED_TO) {
-          print(OTHER, ".\n");
+          printf("\n");
         }
 
 			}	
