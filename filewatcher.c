@@ -177,9 +177,9 @@ void *watchers(){
         if (filter || event->mask & IN_MOVED_FROM) {
           print(WHITE, "[");
           if (event->mask & IN_ISDIR) {
-            print(BLUE, "Directory");
+            print(BLUE, "DIRECTORY");
           } else {
-            print(PURPLE, "File");
+            print(PURPLE, "FILE");
           }
           print(WHITE, "]");
         }
