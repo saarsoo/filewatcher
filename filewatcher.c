@@ -165,9 +165,8 @@ void *watchers(){
 					printf("Base directory \"%s\" was deleted.\n", event->name);
 				} else if (event->mask & IN_MOVED_FROM) {
           print(INFO, "RENAMED");
-          print(OTHER, " to ");
         } else if (event->mask & IN_MOVED_TO) {
-          print(OTHER, "\"%s\"", event->name);
+          print(WHITE, " -> %s", event->name);
         }
 
         if (filter || event->mask & IN_MOVED_FROM) {
