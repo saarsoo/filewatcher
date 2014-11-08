@@ -17,9 +17,9 @@
 typedef enum { false, true } bool;
 
 struct watcher {
-	int wd;
-	int fd;
-	struct watcher *next;
+  int wd;
+  int fd;
+  struct watcher *next;
 };
 
 static struct watcher *root;
@@ -32,96 +32,92 @@ void *watchers();
 void intHandler(int);
 
 int main(int argc, char *argv[]){
-	if (argc == 1) {
-		print(ERROR, "You must specify which folder to watch!\n");
-		return 1;
-	}
-
-	int i, err;
-	struct stat s;
-	for (i = 1; i < argc; i++){
-		err = stat(argv[i], &s);
-		if (err == -1) {
-			if (ENOENT == errno) {
-        print(ERROR, "Directory \"%s\" doesn't exist!\n", argv[i]);
-				return 2;
-			}
-		} else {
-			if (!S_ISDIR(s.st_mode)) {
-        print(ERROR, "\"%s\" is not a directory!\n", argv[i]);
-				return 3;
-			}
-		}
-	}
-
-	root = (struct watcher *)malloc(sizeof(struct watcher));
-
-	root->fd = inotify_init();
-
-	if (root->fd < 0) {
-		print(ERROR, "Failed to initialize watcher.\n");
-		return 4;
-	}
-
-	root->wd = inotify_add_watch(root->fd, argv[1], IN_ALL_EVENTS);
-
-	if (root->wd < 0) {
-		print(ERROR, "Failed to initialize watcher.\n");
-		return 5;
-	}
-	
-	pthread_t w_pt;
-
-	if (pthread_create(&w_pt, NULL, watchers, NULL)) {
-		fprintf(stderr, "Failed creating watcher thread!");
-	}
-	
-	print(SUCCESS, "Running...\n\n");
-
-	signal(SIGINT, intHandler);
-
-	while(running) {
-		pthread_cond_wait(&cond, &mutex);
-	}
-
-	print(OTHER, "\nCleaning up... ");
-
-	(void)close(root->fd);
-
-  if (pthread_join(w_pt, NULL)) {
-          print(INFO, "Thread had already exited (?)");
-          return 6;
+  if (argc == 1) {
+    print(ERROR, "You must specify which folder to watch!\n");
+    return 1;
   }
 
-	print(OTHER, "Done!\n");
+  int i, err;
+  struct stat s;
+  for (i = 1; i < argc; i++){
+    err = stat(argv[i], &s);
+    if (err == -1) {
+      if (ENOENT == errno) {
+        print(ERROR, "Directory \"%s\" doesn't exist!\n", argv[i]);
+        return 2;
+      }
+    } else {
+      if (!S_ISDIR(s.st_mode)) {
+        print(ERROR, "\"%s\" is not a directory!\n", argv[i]);
+        return 3;
+      }
+    }
+  }
 
-	return 0;
+  root = (struct watcher *)malloc(sizeof(struct watcher));
+
+  root->fd = inotify_init();
+
+  if (root->fd < 0) {
+    print(ERROR, "Failed to initialize watcher.\n");
+    return 4;
+  }
+
+  root->wd = inotify_add_watch(root->fd, argv[1], IN_ALL_EVENTS);
+
+  if (root->wd < 0) {
+    print(ERROR, "Failed to initialize watcher.\n");
+    return 5;
+  }
+
+  pthread_t w_pt;
+
+  if (pthread_create(&w_pt, NULL, watchers, NULL)) {
+    fprintf(stderr, "Failed creating watcher thread!");
+  }
+
+  print(SUCCESS, "Running...\n\n");
+
+  signal(SIGINT, intHandler);
+
+  while(running) {
+    pthread_cond_wait(&cond, &mutex);
+  }
+
+  print(OTHER, "\nCleaning up... ");
+
+  (void)close(root->fd);
+
+  if (pthread_join(w_pt, NULL)) {
+    print(INFO, "Thread had already exited (?)");
+    return 6;
+  }
+
+  print(OTHER, "Done!\n");
+
+  return 0;
 }
 
 void *watchers(){
-	char buffer[BUF_LEN];
-	int length, i;
+  char buffer[BUF_LEN];
+  int length, i;
 
-	while(running) {
-		length = read(root->fd, buffer, BUF_LEN);
-		//print(BLUE, "Finished read, translating\n");
+  while(running) {
+    length = read(root->fd, buffer, BUF_LEN);
 
-		if (length <= 0) {
-			printf("No length");
-			break;
-		}
+    if (length <= 0) {
+      printf("No length");
+      break;
+    }
 
-		i = 0;
+    i = 0;
 
-		while (i < length) {
-			//print(SUCCESS, "Reading event...");
-			struct inotify_event *event = (struct inotify_event *)&buffer[i];
-			if (event->len) {
+    while (i < length) {
+      struct inotify_event *event = (struct inotify_event *)&buffer[i];
+      if (event->len) {
         char *msg;
-        //print(INFO, "Event type: (%d)\n", event->mask);
-
         int filter = (event->mask & IN_CREATE || event->mask & IN_MODIFY || event->mask & IN_DELETE || event->mask & IN_DELETE_SELF);
-       
+
         if (filter || event->mask & IN_MOVED_FROM) { 
           int len;
 
@@ -139,15 +135,15 @@ void *watchers(){
           print(WHITE, "[");
         }
 
-				if (event->mask & IN_CREATE) {
+        if (event->mask & IN_CREATE) {
           print(GREEN, "CREATED", event->name);
-				} else if (event->mask & IN_MODIFY) {
+        } else if (event->mask & IN_MODIFY) {
           print(INFO, "MODIFIED");
-				} else if (event->mask & IN_DELETE) {
+        } else if (event->mask & IN_DELETE) {
           print(RED, "DELETED", event->name);
-				} else if (event->mask & IN_DELETE_SELF) {
-					printf("Base directory \"%s\" was deleted.\n", event->name);
-				} else if (event->mask & IN_MOVED_FROM) {
+        } else if (event->mask & IN_DELETE_SELF) {
+          printf("Base directory \"%s\" was deleted.\n", event->name);
+        } else if (event->mask & IN_MOVED_FROM) {
           print(INFO, "RENAMED");
         } else if (event->mask & IN_MOVED_TO) {
           print(WHITE, " -> %s", event->name);
@@ -175,18 +171,17 @@ void *watchers(){
           printf("\n");
         }
 
-			}	
-			
-			i += EVENT_SIZE + event->len;
-		}
-    //print(BLUE, "End of translation\n");
-	}
+      }	
 
-	pthread_cond_signal(&cond);
+      i += EVENT_SIZE + event->len;
+    }
+  }
+
+  pthread_cond_signal(&cond);
 }
 
 void intHandler(int dummy) {
-	print(OTHER, "\nKill signal sent, exiting...");
-	running = false;
-	(void)inotify_rm_watch(root->fd, root->wd);
+  print(OTHER, "\nKill signal sent, exiting...");
+  running = false;
+  (void)inotify_rm_watch(root->fd, root->wd);
 }
