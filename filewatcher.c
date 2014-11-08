@@ -32,17 +32,11 @@ void *watchers();
 void intHandler(int);
 
 int main(int argc, char *argv[]){
-	system("clear");
-
-	print(SUCCESS, "Checking input... ");
 	if (argc == 1) {
-		print(ERROR, "You must specify which folders to watch!\n");
+		print(ERROR, "You must specify which folder to watch!\n");
 		return 1;
-	} else {
-		print(SUCCESS, "OK!\n");
 	}
 
-	print(SUCCESS, "Validating input... ");
 	int i, err;
 	struct stat s;
 	for (i = 1; i < argc; i++){
@@ -55,14 +49,10 @@ int main(int argc, char *argv[]){
 		} else {
 			if (!S_ISDIR(s.st_mode)) {
         print(ERROR, "\"%s\" is not a directory!\n", argv[i]);
-				//return 3;
+				return 3;
 			}
 		}
 	}
-
-  print(SUCCESS, "OK!\n");
-
-	print(SUCCESS, "Initializing Watchers... ");
 
 	root = (struct watcher *)malloc(sizeof(struct watcher));
 
@@ -79,10 +69,6 @@ int main(int argc, char *argv[]){
 		print(ERROR, "Failed to initialize watcher.\n");
 		return 5;
 	}
-
-	print(SUCCESS, "OK!\n");
-
-	print(SUCCESS, "Initializing Watcher Thread... ");
 	
 	pthread_t w_pt;
 
@@ -90,8 +76,6 @@ int main(int argc, char *argv[]){
 		fprintf(stderr, "Failed creating watcher thread!");
 	}
 	
-	print(SUCCESS, "OK!\n");
-
 	print(SUCCESS, "Running...\n\n");
 
 	signal(SIGINT, intHandler);
