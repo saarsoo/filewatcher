@@ -31,6 +31,7 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void *watchers();
 void intHandler(int);
+void copy_string(char *, char *);
 
 int main(int argc, char **argv){
   int opt;
@@ -191,7 +192,17 @@ void *watchers(){
         }
 
         if (command != "" && (filter || event->mask & IN_MOVED_TO)) {
-          printf("TODO: Run command here!\n");
+          char *result = strstr(command, "\%file");
+          int position = result - command;
+
+          char before[strlen(command)];
+
+          copy_string(before, command);
+          before[position] = '\0';
+
+          char *c;
+          asprintf(&c, "%s%s%s", before, event->name, &result[5]);
+          system(c);
         }
       }	
 
@@ -200,6 +211,16 @@ void *watchers(){
   }
 
   pthread_cond_signal(&cond);
+}
+
+void copy_string(char *target, char *source) {
+  while (*source) {
+    *target = *source;
+    source++;
+    target++;
+  }
+
+  *target = '\0';
 }
 
 void intHandler(int dummy) {
