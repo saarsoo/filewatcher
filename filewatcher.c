@@ -24,6 +24,7 @@ struct watcher {
 
 static struct watcher *root;
 static bool running = true;
+static char *command = "";
 
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -31,28 +32,46 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 void *watchers();
 void intHandler(int);
 
-int main(int argc, char *argv[]){
+int main(int argc, char **argv){
+  int opt;
+  const char *path = "";
+
   if (argc == 1) {
     print(ERROR, "You must specify which folder to watch!\n");
     return 1;
   }
 
-  int i, err;
+  path = argv[1];
+
   struct stat s;
-  for (i = 1; i < argc; i++){
-    err = stat(argv[i], &s);
-    if (err == -1) {
-      if (ENOENT == errno) {
-        print(ERROR, "Directory \"%s\" doesn't exist!\n", argv[i]);
-        return 2;
-      }
-    } else {
-      if (!S_ISDIR(s.st_mode)) {
-        print(ERROR, "\"%s\" is not a directory!\n", argv[i]);
-        return 3;
-      }
+
+  if (stat(path, &s) == -1) {
+    if (ENOENT == errno) {
+      print(ERROR, "Directory \"%s\" doesn't exist!\n", path);
+      return 2;
+    }
+  } else {
+    if (!S_ISDIR(s.st_mode)) {
+      print(ERROR, "\"%s\" is not a directory!\n", path);
+      return 3;
     }
   }
+
+  while ((opt = getopt(argc, argv, "c:")) != -1) {
+    switch (opt) {
+      case 'c':
+        command = optarg;
+        break;
+      case '?':
+        path = optarg;
+        break;
+    }
+  }
+
+  if (command == "") {
+    print(INFO, "No command specified, running in log mode.\n");
+  }
+
 
   root = (struct watcher *)malloc(sizeof(struct watcher));
 
@@ -63,7 +82,7 @@ int main(int argc, char *argv[]){
     return 4;
   }
 
-  root->wd = inotify_add_watch(root->fd, argv[1], IN_ALL_EVENTS);
+  root->wd = inotify_add_watch(root->fd, path, IN_ALL_EVENTS);
 
   if (root->wd < 0) {
     print(ERROR, "Failed to initialize watcher.\n");
@@ -171,6 +190,9 @@ void *watchers(){
           printf("\n");
         }
 
+        if (command != "" && (filter || event->mask & IN_MOVED_TO)) {
+          printf("TODO: Run command here!\n");
+        }
       }	
 
       i += EVENT_SIZE + event->len;
