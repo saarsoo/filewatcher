@@ -104,7 +104,7 @@ int main(int argc, char **argv){
     pthread_cond_wait(&cond, &mutex);
   }
 
-  print(OTHER, "\nCleaning up... ");
+  print(INFO, "\nCleaning up... ");
 
   (void)close(root->fd);
 
@@ -113,7 +113,7 @@ int main(int argc, char **argv){
     return 6;
   }
 
-  print(OTHER, "Done!\n");
+  print(INFO, "Done!\n");
 
   return 0;
 }
@@ -138,7 +138,7 @@ void *watchers(){
         char *msg;
         int filter = (event->mask & IN_CREATE || event->mask & IN_MODIFY || event->mask & IN_DELETE || event->mask & IN_DELETE_SELF);
 
-        if (filter || event->mask & IN_MOVED_FROM) { 
+        if (filter || event->mask & IN_MOVED_FROM) {
           int len;
 
           time_t t = time(NULL);
@@ -204,7 +204,7 @@ void *watchers(){
           asprintf(&c, "%s%s%s", before, event->name, &result[5]);
           system(c);
         }
-      }	
+      }
 
       i += EVENT_SIZE + event->len;
     }
@@ -224,7 +224,7 @@ void copy_string(char *target, char *source) {
 }
 
 void intHandler(int dummy) {
-  print(OTHER, "\nKill signal sent, exiting...");
+  print(INFO, "\nKill signal sent, exiting...");
   running = false;
   (void)inotify_rm_watch(root->fd, root->wd);
 }
