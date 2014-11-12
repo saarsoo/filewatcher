@@ -211,6 +211,7 @@ void *watchers(){
             char before[strlen(command)];
 
             copy_string(before, command);
+            before[position] = '\0';
 
             char *c;
             asprintf(&c, "%s%s%s", before, event->name, &result[5]);
