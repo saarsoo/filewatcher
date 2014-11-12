@@ -112,7 +112,7 @@ int main(int argc, char **argv){
     pthread_cond_wait(&cond, &mutex);
   }
 
-  print(OTHER, "\nCleaning up... ");
+  print(INFO, "\nCleaning up... ");
 
   (void)close(root->fd);
 
@@ -121,7 +121,7 @@ int main(int argc, char **argv){
     return 6;
   }
 
-  print(OTHER, "Done!\n");
+  print(INFO, "Done!\n");
 
   return 0;
 }
@@ -217,7 +217,7 @@ void *watchers(){
             system(c);
           }
         }
-      }	
+      }
 
       i += EVENT_SIZE + event->len;
     }
