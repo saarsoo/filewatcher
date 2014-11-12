@@ -25,6 +25,7 @@ struct watcher {
 static struct watcher *root;
 static bool running = true;
 static char *command = "";
+static bool verbose = false;
 
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -36,6 +37,10 @@ void copy_string(char *, char *);
 int main(int argc, char **argv){
   int opt;
   const char *path = "";
+
+#if DEBUG
+  printf("\n\n\nIn debug mode, no color will be used.\n");
+#endif
 
   if (argc == 1) {
     print(ERROR, "You must specify which folder to watch!\n");
@@ -58,11 +63,13 @@ int main(int argc, char **argv){
     }
   }
 
-  while ((opt = getopt(argc, argv, "c:")) != -1) {
+  while ((opt = getopt(argc, argv, "vc:")) != -1) {
     switch (opt) {
       case 'c':
         command = optarg;
         break;
+      case 'v':
+        verbose = true;
       case '?':
         path = optarg;
         break;
@@ -71,6 +78,7 @@ int main(int argc, char **argv){
 
   if (command == "") {
     print(INFO, "No command specified, running in log mode.\n");
+    verbose = true;
   }
 
 
@@ -135,74 +143,79 @@ void *watchers(){
     while (i < length) {
       struct inotify_event *event = (struct inotify_event *)&buffer[i];
       if (event->len) {
-        char *msg;
         int filter = (event->mask & IN_CREATE || event->mask & IN_MODIFY || event->mask & IN_DELETE || event->mask & IN_DELETE_SELF);
 
-        if (filter || event->mask & IN_MOVED_FROM) { 
-          int len;
+        if (verbose) {
+          if (filter || event->mask & IN_MOVED_FROM) { 
+            int len;
 
-          time_t t = time(NULL);
-          struct tm *p = localtime(&t);
+            time_t t = time(NULL);
+            struct tm *p = localtime(&t);
 
-          char s[11];
-          strftime(s, 11, "%H:%M:%S", p);
-          print(WHITE, "[");
-          print(BLUE, "%s", s);
-          print(WHITE, "]");
-        }
-
-        if (filter || event->mask & IN_MOVED_FROM) {
-          print(WHITE, "[");
-        }
-
-        if (event->mask & IN_CREATE) {
-          print(GREEN, "CREATED", event->name);
-        } else if (event->mask & IN_MODIFY) {
-          print(INFO, "MODIFIED");
-        } else if (event->mask & IN_DELETE) {
-          print(RED, "DELETED", event->name);
-        } else if (event->mask & IN_DELETE_SELF) {
-          printf("Base directory \"%s\" was deleted.\n", event->name);
-        } else if (event->mask & IN_MOVED_FROM) {
-          print(INFO, "RENAMED");
-        } else if (event->mask & IN_MOVED_TO) {
-          print(WHITE, " -> %s", event->name);
-        }
-
-        if (filter || event->mask & IN_MOVED_FROM) {
-          print(WHITE, "]");
-        }
-
-        if (filter || event->mask & IN_MOVED_FROM) {
-          print(WHITE, "[");
-          if (event->mask & IN_ISDIR) {
-            print(PURPLE, "DIRECTORY");
-          } else {
-            print(PURPLE, "FILE");
+            char s[11];
+            strftime(s, 11, "%H:%M:%S", p);
+            print(WHITE, "[");
+            print(BLUE, "%s", s);
+            print(WHITE, "]");
           }
-          print(WHITE, "]");
-        }
 
-        if (filter || event->mask & IN_MOVED_FROM) {
-          print(WHITE, " %s", event->name);
-        }
+          if (filter || event->mask & IN_MOVED_FROM) {
+            print(WHITE, "[");
+          }
 
-        if (filter || event->mask & IN_MOVED_TO) {
-          printf("\n");
+          if (event->mask & IN_CREATE) {
+            print(GREEN, "CREATED", event->name);
+          } else if (event->mask & IN_MODIFY) {
+            print(INFO, "MODIFIED");
+          } else if (event->mask & IN_DELETE) {
+            print(RED, "DELETED", event->name);
+          } else if (event->mask & IN_DELETE_SELF) {
+            printf("Base directory \"%s\" was deleted.\n", event->name);
+          } else if (event->mask & IN_MOVED_FROM) {
+
+            print(INFO, "RENAMED");
+          } else if (event->mask & IN_MOVED_TO) {
+            print(WHITE, " -> %s", event->name);
+          }
+
+          if (filter || event->mask & IN_MOVED_FROM) {
+            print(WHITE, "]");
+          }
+
+          if (filter || event->mask & IN_MOVED_FROM) {
+            print(WHITE, "[");
+            if (event->mask & IN_ISDIR) {
+              print(PURPLE, "DIRECTORY");
+            } else {
+              print(PURPLE, "FILE");
+            }
+            print(WHITE, "]");
+          }
+
+          if (filter || event->mask & IN_MOVED_FROM) {
+            print(WHITE, " %s", event->name);
+          }
+
+          if (filter || event->mask & IN_MOVED_TO) {
+            printf("\n");
+          }
         }
 
         if (command != "" && (filter || event->mask & IN_MOVED_TO)) {
           char *result = strstr(command, "\%file");
-          int position = result - command;
+          if (result == 0x0) {
+            system(command);
+          } else {
+            int position = result - command;
 
-          char before[strlen(command)];
+            char before[strlen(command)];
 
-          copy_string(before, command);
-          before[position] = '\0';
+            copy_string(before, command);
 
-          char *c;
-          asprintf(&c, "%s%s%s", before, event->name, &result[5]);
-          system(c);
+            char *c;
+            asprintf(&c, "%s%s%s", before, event->name, &result[5]);
+            system(c);
+          }
         }
       }	
 
@@ -224,7 +237,7 @@ void copy_string(char *target, char *source) {
 }
 
 void intHandler(int dummy) {
-  print(OTHER, "\nKill signal sent, exiting...");
+  print(INFO, "\nKill signal sent, exiting...");
   running = false;
   (void)inotify_rm_watch(root->fd, root->wd);
 }
