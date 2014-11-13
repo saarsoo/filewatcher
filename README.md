@@ -3,6 +3,8 @@ Filewatcher
 
 Filewatcher built in C. The watcher will report any changes in the folder specified.
 
+Support for verbose mode!
+
 Example output:
 ```
 Checking input... OK!
